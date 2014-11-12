@@ -8,7 +8,10 @@ using namespace std;
 #define K 1000
 #define EPS 0.01
 #define c 0.01
-#define eps 0.0001
+#define eps 0.001
+
+double __2n_minima (double x1, double x2);
+void gold (double *x1, double *x2, double dx1, double dx2);
 
 int main()
 {
@@ -25,7 +28,7 @@ int main()
 	double g11 = 0, g12 = 0, g21 = 0, g22 = 0;
 
 	char filepath[256];
-	sprintf(filepath, "normal_2n/%2.1f,%2.1f.txt", x[0], x[1]);
+	sprintf(filepath, "gold_2n/%2.1f,%2.1f.txt", x[0], x[1]);
 	ofstream fout; // file出力の為の定義
 	fout.open(filepath); // fileを開く
 	fout << "#k¥tx1¥tx2¥tλ" << endl; // 見出し出力
@@ -68,9 +71,57 @@ int main()
 			y[n] = x[n];
 		}
 
-		x[0] = x[0] - c * dx1;
-		x[1] = x[1] - c * dx2;
+		gold (&x[0], &x[1], dx1, dx2);
 	}
 
 	return 0;
+}
+
+// 目的関数
+double __2n_minima (double x1, double x2)
+{
+	double f;
+	f = pow(x1, 4) - 16 * pow(x1, 2) + 5 * x1 + pow(x2, 4) - 16 * pow(x2, 2) + 5 * x2;
+	return f;
+}
+
+// 黄金分割法
+void gold (double *x1, double *x2, double dx1, double dx2)
+{
+	double x1_max, x2_max, a, b, f1, f2;
+	int count = 0;
+	double tau = (sqrt(5) - 1) / 2;
+	double norm = sqrt(dx1*dx1 + dx2*dx2);
+	dx1 = dx1 / norm, dx2 = dx2 / norm;
+	x1_max = *x1 - dx1, x2_max = *x2 - dx2;
+
+	while (count < 100) {
+		count += 1;
+		a = __2n_minima(*x1, *x2);
+		b = __2n_minima(x1_max, x2_max);
+		f1 = __2n_minima(*x1 - (1-tau) * dx1, *x2 - (1-tau) * dx2);
+		f2 = __2n_minima(*x1 - tau * dx1, *x2 - tau * dx2);
+
+		if (f1 < f2) {
+			x1_max = *x1 - tau * dx1;
+			x2_max = *x2 - tau * dx2;
+		} else {
+			*x1 = *x1 - (1 - tau) * dx1;
+			*x2 = *x2 - (1 - tau) * dx2;
+		}
+		dx1 = *x1 - x1_max;
+		dx2 = *x2 - x2_max;
+		norm = sqrt(dx1*dx1 + dx2*dx2);
+		if (norm < eps) break;
+	}
+
+	f1 = __2n_minima(*x1 - (1-tau) * dx1, *x2 - (1-tau) * dx2);
+	f2 = __2n_minima(*x1 - tau * dx1, *x2 - tau * dx2);
+	if (f1 < f2) {
+		*x1 = *x1 - (1-tau) * dx1;
+		*x2 = *x2 - (1-tau) * dx2;
+	} else {
+		*x1 = *x1 - tau * dx1;
+		*x2 = *x2 - tau * dx2;
+	}
 }
